@@ -75,13 +75,14 @@
 
 /** 1) 붙여넣기 텍스트를 관대하게 보정 */
 function normalizeRaw(raw){
-  return raw.replace(/\r/g,'')
-            // "(0.07%)" 같은 그룹 확률 뒤에 바로 글자가 오면 줄바꿈 삽입
-            .replace(/%\)\s*(?=\S)/g, '%)\n')
-            // 탭/스페이스 정규화
-            .replace(/[ \t]+/g, m => m.includes('\t') ? '\t' : ' ')
-            .trim();
+  return raw
+    .replace(/\r/g,'')
+    .replace(/\\t/g, '\t')          //  '\t' 글자를 실제 탭으로 변환
+    .replace(/%\)\s*(?=\S)/g, '%)\n') // 그룹확률 뒤에 아이템이 붙은 경우 줄바꿈
+    .replace(/[ \t]+/g, m => (m.includes('\t') ? '\t' : ' '))
+    .trim();
 }
+
 
 /** 2) 그룹/아이템/확률 파싱 (소수점 8자리 반올림) */
 function parseProbabilityText(raw){
