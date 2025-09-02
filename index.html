@@ -37,7 +37,7 @@
 <body>
 <div class="wrap">
   <h1>카드 뽑기 시뮬레이터</h1>
-  <div class="sub">확률은 2005년 9월 카드 자판기 확률 참고 
+  <div class="sub">확률은 2005년 9월 카드 자판기 확률 참고(소수8자리 반올림)
     <a href="https://community.gnjoy.com/rom/Board/ROM21/180622" 
      target="_blank" rel="noopener noreferrer">
     (공식 게시글 보기)
@@ -71,9 +71,7 @@
 </div>
 
 <script>
-/* ===== 확률은 probabilities.txt(정적 파일)에서만 로드 ===== */
 
-/** 1) 붙여넣기 텍스트를 관대하게 보정 */
 function normalizeRaw(raw){
   return raw
     .replace(/\r/g,'')
@@ -84,7 +82,6 @@ function normalizeRaw(raw){
 }
 
 
-/** 2) 그룹/아이템/확률 파싱 (소수점 8자리 반올림) */
 function parseProbabilityText(raw){
   const text = normalizeRaw(raw);
   const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
