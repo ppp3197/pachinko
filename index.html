@@ -37,7 +37,7 @@
 <body>
 <div class="wrap">
   <h1>카드 뽑기 시뮬레이터</h1>
-  <div class="sub">확률은 2005년 9월 카드 자판기 확률 참고(소수8자리 반올림)
+  <div class="sub">확률은 2005년 9월 카드 자판기 확률 참고
     <a href="https://community.gnjoy.com/rom/Board/ROM21/180622" 
      target="_blank" rel="noopener noreferrer">
     (공식 게시글 보기)
@@ -148,7 +148,7 @@ function rarityClass(n){
 
 function renderTables(groups){
   // 그룹별
-  let ghtml=`<tr><th>그룹</th><th class="right">공식확률</th><th class="right">반올림 공식확률 적용</th><th class="right">차이</th></tr>`;
+  let ghtml=`<tr><th>그룹</th><th class="right">공식확률</th><th class="right">소수8자리 반올림 적용</th><th class="right">차이</th></tr>`;
   for(const g of groups){
     const sum=g.items.reduce((s,i)=>s+i.pct,0);
     const diff=Math.abs(sum-g.pct);
