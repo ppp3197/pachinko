@@ -5,457 +5,152 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>카드 뽑기 시뮬레이터</title>
 <style>
-  :root{
-    --bg:#0b0c10;--card:#16181d;--muted:#9aa4b2;--text:#e6e9ef;--accent:#3ddc84;
-    --r-perfect:#b786ff;--r-select:#42a5f5;--r-optimal:#26c6da;--r-tactical:#ffd54f;--r-common:#b0bec5;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:linear-gradient(120deg,#0b0c10,#111418);color:var(--text);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans KR","Apple SD Gothic Neo",sans-serif}
+  :root{--bg:#0b0c10;--card:#16181d;--muted:#9aa4b2;--text:#e6e9ef;--accent:#3ddc84;
+    --r-perfect:#b786ff;--r-select:#42a5f5;--r-optimal:#26c6da;--r-tactical:#ffd54f;--r-common:#b0bec5;}
+  *{box-sizing:border-box} body{margin:0;background:linear-gradient(120deg,#0b0c10,#111418);
+  color:var(--text);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans KR",sans-serif}
   .wrap{max-width:980px;margin:24px auto;padding:20px}
-  h1{margin:0 0 8px;font-size:28px;font-weight:800;letter-spacing:-.3px}
+  h1{margin:0 0 8px;font-size:28px;font-weight:800}
   .sub{color:var(--muted);margin-bottom:16px}
   .panel{background:var(--card);border:1px solid #22272e;border-radius:16px;padding:16px;margin:12px 0}
-  .grid{display:grid;gap:12px}
-  .g2{grid-template-columns: 1.2fr .8fr}
-  textarea{width:100%;min-height:220px;background:#0f1115;color:var(--text);border:1px solid #2a2f36;border-radius:12px;padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   button{background:#1d222a;color:#fff;border:1px solid #2a2f36;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer}
-  button.primary{background:var(--accent);color:#103a2a;border-color:#1f7e56}
+  button.primary{background:var(--accent);color:#0e2f22;border-color:#1f7e56}
   button:disabled{opacity:.6;cursor:not-allowed}
-  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .result{display:flex;align-items:center;gap:14px;padding:14px;border-radius:12px;border:1px solid #2a2f36;background:#0f1115;min-height:72px}
+  .pill{padding:4px 10px;border-radius:999px;font-weight:800;font-size:12px}
   .tag{font-size:12px;border-radius:999px;padding:4px 8px;border:1px solid #2a2f36;color:var(--muted)}
   .ok{color:#6ee7b7}.warn{color:#fbbf24}.bad{color:#f87171}
-  .result{display:flex;align-items:center;gap:14px;padding:14px;border-radius:12px;border:1px solid #2a2f36;background:#0f1115}
-  .pill{padding:4px 10px;border-radius:999px;font-weight:800;font-size:12px}
+  .hist{max-height:240px;overflow:auto;border:1px dashed #2a2f36;border-radius:12px;padding:10px;background:#0e1014}
+  .hist div{display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px solid #181c22}
+  .hist div:last-child{border-bottom:0}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:8px;border-bottom:1px solid #1f2430} th{color:#cbd5e1;text-align:left}
+  .right{text-align:right}
   .r-perfect{background:var(--r-perfect);color:#191622}
   .r-select{background:var(--r-select);color:#081a2c}
   .r-optimal{background:var(--r-optimal);color:#062226}
   .r-tactical{background:var(--r-tactical);color:#2d2200}
   .r-common{background:var(--r-common);color:#0c1116}
-  .hist{max-height:240px;overflow:auto;border:1px dashed #2a2f36;border-radius:12px;padding:10px;background:#0e1014}
-  .hist div{display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px solid #181c22}
-  .hist div:last-child{border-bottom:0}
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  th,td{padding:8px;border-bottom:1px solid #1f2430}
-  th{color:#cbd5e1;text-align:left}
-  .right{text-align:right}
-  .muted{color:var(--muted)}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>카드 뽑기 시뮬레이터</h1>
-  <div class="sub">텍스트 확률표를 붙여넣고 <b>파싱</b>을 누르면 바로 뽑기가 가능합니다.</div>
+  <div class="sub">확률은 2005년 9월 카드 자판기 확률 참고 
+    <a href="https://community.gnjoy.com/rom/Board/ROM21/180622" 
+     target="_blank" rel="noopener noreferrer">
+    (공식 게시글 보기)
+  </a></div>
 
-  <div class="panel grid g2">
-    <div>
-      <div class="row" style="justify-content:space-between;margin-bottom:8px">
-        <div class="muted">확률 데이터 (그대로 수정 가능)</div>
-        <button id="parseBtn">파싱/검증</button>
-      </div>
-      <textarea id="dataInput"></textarea>
-      <div id="validate" class="row" style="margin-top:8px"></div>
-    </div>
-
-    <div>
-      <div class="muted" style="margin-bottom:8px">뽑기</div>
-      <div class="row" style="gap:10px;margin-bottom:12px">
+  <div class="panel">
+    <div class="row" style="justify-content:space-between">
+      <div class="row">
         <button id="draw1" class="primary" disabled>1회 뽑기</button>
         <button id="draw10" disabled>10회 뽑기</button>
         <button id="reset" disabled>리셋</button>
       </div>
-      <div id="lastResult" class="result" style="min-height:72px">아직 결과 없음</div>
-      <div class="panel" style="margin-top:12px">
-        <div class="muted" style="margin-bottom:6px">히스토리</div>
-        <div id="history" class="hist"></div>
-      </div>
+      <div id="loadState" class="tag">불러오는 중…</div>
+    </div>
+    <div id="lastResult" class="result">아직 결과 없음</div>
+    <div style="margin-top:10px">
+      <div class="muted" style="margin-bottom:6px">히스토리</div>
+      <div id="history" class="hist"></div>
     </div>
   </div>
 
   <div class="panel">
-    <div class="muted" style="margin-bottom:8px">그룹별 확률</div>
+    <div class="muted" style="margin-bottom:8px">그룹별 확률 (공개)</div>
     <table id="groupTable"></table>
   </div>
 
   <div class="panel">
-    <div class="muted" style="margin-bottom:8px">아이템 목록/확률</div>
+    <div class="muted" style="margin-bottom:8px">아이템 목록/확률 (공개)</div>
     <table id="itemTable"></table>
   </div>
 </div>
 
 <script>
-const RAW_DEFAULT = `퍼펙트 카드
- (0.07%)\t
-망자 오크 로드 카드\t0.0233333%
-망자 도플갱어 카드\t0.0233333%
-망자 월야화 카드\t0.0233333%
-셀렉션 카드
- (0.5%)\t
-이세계의 발키리 란드그리스 카드\t0.1339673%
-발키리 란드그리스 카드\t0.1349181%
-선왕 기사단 카드\t0.1339673%
-이세계의 키메라 카드\t0.0006339%
-이세계의 데빌링 카드\t0.0006339%
-이세계의 엔젤링 카드\t0.0006339%
-시공 드래곤 카드\t0.0006339%
-이세계의 잔누비아 카드\t0.0006339%
-사클레르 카드\t0.0006339%
-이세계의 발터 카드\t0.0006339%
-이세계의 흑사왕 카드\t0.0006339%
-이세계의 마가레타 소린 카드\t0.0006339%
-이세계의 완성품 바포메트 XIII호 카드\t0.0006339%
-마가레타 소린 카드\t0.0006339%
-이세계의 재앙 마녀 카드\t0.0006339%
-이세계의 하티 카드\t0.0006339%
-이세계의 타오스 카드\t0.0006339%
-이세계의 마야 카드\t0.0006339%
-이세계의 로드나이트 세이렌 카드\t0.0006339%
-로드나이트 세이렌 카드\t0.0006339%
-이세계의 드레이크 카드\t0.0006339%
-이세계의 오크히어로 카드\t0.0006339%
-이세계의 도플갱어 카드\t0.0006339%
-이세계의 아울 바론 카드\t0.0006339%
-이세계의 프리오니 카드\t0.0006339%
-이세계의 바포메트 카드\t0.0006339%
-이세계의 영혼 연주자 카드\t0.0006339%
-이세계의 이그드라실의 씨앗 카드\t0.0006339%
-이세계의 죽은자의 주인 카드\t0.0006339%
-이세계의 변장한 늑대 카드\t0.0006339%
-이세계의 화염 영주 카호 카드\t0.0006339%
-이세계의 아크 엔젤링 카드\t0.0006339%
-이세계의 블러디머더러 카드\t0.0006339%
-이세계의 발키리 레긴레이브 카드\t0.0006339%
-고대 바포메트의 환영 카드\t0.0006339%
-이세계의 감정 집합체 카드\t0.0006339%
-이세계의 마검사 타나토스 카드\t0.0006339%
-고대 환상드래곤 카드\t0.0006339%
-이세계의 아케인 큐브 카드\t0.0006339%
-카모라 카드\t0.0006339%
-고대 뮤턴트 드래고노이드 카드\t0.0006339%
-고대 미스틸테인 카드\t0.0006339%
-타락한 뿌리 카드\t0.0006339%
-이프리트 제독 카드\t0.0006339%
-흑사왕 카드\t0.0006339%
-포카라니 카드\t0.0006339%
-암다라이스 카드\t0.0006339%
-바다정령의 토템 카드\t0.0006339%
-용암 거대 석상 카드\t0.0006339%
-누카 카드\t0.0006339%
-환상드래곤 가리에로튼 카드\t0.0006339%
-완성품 바포메트 XIII호 카드\t0.0006339%
-터틀 제네럴 카드\t0.0006339%
-타오스 카드\t0.0006339%
-아우둠라 카드\t0.0006339%
-재앙 마녀 카드\t0.0006339%
-바포메트 카드\t0.0006339%
-에드가 카드\t0.0006339%
-크라켄 카드\t0.0006339%
-발터 카드\t0.0006339%
-스네이크 고르고 카드\t0.0006339%
-네코마타 카드\t0.0006339%
-타오군 카 카드\t0.0006339%
-잔누비아 카드\t0.0006339%
-이그드라실의 씨앗 카드\t0.0006339%
-황금 도둑벌레 카드\t0.0006339%
-미스트레스 카드\t0.0006339%
-원령무사 카드\t0.0006339%
-오크히어로 카드\t0.0006339%
-드레이크 카드\t0.0006339%
-조엘 카드\t0.0006339%
-마야 카드\t0.0011094%
-아케인 큐브 카드\t0.0011410%
-발키리 레긴레이브 카드\t0.0011410%
-마검사 타나토스 카드\t0.0011410%
-죽은자의 주인 카드\t0.0011410%
-감정 집합체 카드\t0.0011410%
-오크로드 카드\t0.0011410%
-코볼트 리더 카드\t0.0011410%
-타니 아가씨 카드\t0.0011410%
-보이타타 카드\t0.0011410%
-오시리스 카드\t0.0011410%
-용해 카드\t0.0011410%
-황야의 땅 영주 카드\t0.0011410%
-프리오니 카드\t0.0011410%
-블러디 머더러 카드\t0.0011410%
-도플갱어 카드\t0.0011410%
-카트린느 카드\t0.0011410%
-아크 엔젤링 카드\t0.0011410%
-고블린 리더 카드\t0.0011410%
-크툴라낙스 카드\t0.0011410%
-슈페샤를 카드\t0.0011410%
-폭풍의 기사 카드\t0.0015848%
-힐 윈드 카드\t0.0015848%
-하티 카드\t0.0015848%
-키메라 카드\t0.0015848%
-데빌링 카드\t0.0015848%
-아트로스 카드\t0.0015848%
-엔젤링 카드\t0.0015848%
-다크 로드 카드\t0.0015848%
-그룸 언더 나이트 카드\t0.0015848%
-영혼 연주자 카드\t0.0015848%
-드라큘라 카드\t0.0015848%
-변장한 늑대 카드\t0.0015848%
-피빛의 기사 카드\t0.0015848%
-타임홀더 카드\t0.0015848%
-에레메스 카드\t0.0015848%
-디먼 카드\t0.0015848%
-디타르데우르스 카드\t0.0015848%
-스트라우프 카드\t0.0015848%
-화염영주 카호 카드\t0.0015848%
-옵티멀 카드 (2%)\t리모로 카드\t0.1111111%
-보석 펫 카드\t0.1111111%
-마스터링 카드\t0.1111111%
-오크베이비 카드\t0.1111111%
-잭 카드\t0.1111111%
-딘제 카드\t0.1111111%
-아울 듀크 카드\t0.1111111%
-킹드라모 카드\t0.1111111%
-꿈의들판 정령 카드\t0.1111111%
-시계탑 관리자 카드\t0.1111111%
-라플레시아 카드\t0.1111111%
-체펫트 카드\t0.1111111%
-화염 마녀 카드\t0.1111111%
-로리루리 카드\t0.1111111%
-피리부는 사나이 카드\t0.1111111%
-이클립스 카드\t0.1111111%
-세니아 카드\t0.1111111%
-바질리스크 카드\t0.1111111%
-택틱컬 카드 
-(50%)\t
-마이너우로스 카드\t2.0000000%
-달빛 텐드릴리온 카드\t2.0000000%
-심연의 기사 카드\t2.0000000%
-레이드릭 카드\t2.0000000%
-허수아비 카드\t2.0000000%
-스켈워커 카드\t2.0000000%
-솔져 스켈레톤 카드\t2.0000000%
-에기라 카드\t2.0000000%
-데비루치 카드\t2.0000000%
-페러스 카드\t2.0000000%
-서큐버스 카드\t2.0000000%
-호른 카드\t2.0000000%
-소울 모르포 카드\t2.0000000%
-드릴러 카드\t2.0000000%
-고스트 퍼밀리어 카드\t2.0000000%
-팬텀 나이트메어 테러 카드\t2.0000000%
-마르스 카드\t2.0000000%
-미스트 카드\t2.0000000%
-마린 스피어 카드\t2.0000000%
-소드피쉬 카드\t2.0000000%
-셰프의 축복\t2.0000000%
-가든 축제 기념 카드\t2.0000000%
-마왕 모로크 카드\t2.0000000%
-복숭아 요괴 포링 카드\t2.0000000%
-사랑의 쌍둥이별 카드\t2.0000000%
-일반 카드 
-(47.43%)\t
-퍼밀리어 카드\t1.0540000%
-암컷 도둑벌레 카드\t1.0540000%
-요요 카드\t1.0540000%
-로커 카드\t1.0540000%
-울프 카드\t1.0540000%
-로다 프로그 카드\t1.0540000%
-바돈 카드\t1.0540000%
-마리나 카드\t1.0540000%
-마타 카드\t1.0540000%
-미이라 카드\t1.0540000%
-빅풋 카드\t1.0540000%
-천하대장군 카드\t1.0540000%
-무낙 카드\t1.0540000%
-본건 카드\t1.0540000%
-도깨비 카드\t1.0540000%
-구미호 카드\t1.0540000%
-하이오크 카드\t1.0540000%
-나이트메어 카드\t1.0540000%
-오크스켈레톤 카드\t1.0540000%
-헌터 플라이 카드\t1.0540000%
-레이쓰 카드\t1.0540000%
-가고일 카드\t1.0540000%
-스팅 카드\t1.0540000%
-아놀리안 카드\t1.0540000%
-라이드워드 카드\t1.0540000%
-조커 카드\t1.0540000%
-리프캣 카드\t1.0540000%
-해달 카드\t1.0540000%
-에그링 카드\t1.0540000%
-스위트 로다 프로그 카드\t1.0540000%
-스태포 카드\t1.0540000%
-비홀더 카드\t1.0540000%
-등룡 카드\t1.0540000%
-빨간꼬리 오본느 카드\t1.0540000%
-미밍 카드\t1.0540000%
-퍼씰 카드\t1.0540000%
-퍼디어 카드\t1.0540000%
-디멘트 레이븐 카드\t1.0540000%
-스팅거 카드\t1.0540000%
-블루 어시더스 카드\t1.0540000%
-미믹 카드\t1.0540000%
-개미 알 카드\t1.0540000%
-사스콰치 카드\t1.0540000%
-시원한 여름 카드\t1.0540000%
-벚꽃 시즌카드\t1.0540000%`;
 
-/* ---------- 2) 파서: 그룹/아이템/확률 추출 ---------- */
+function normalizeRaw(raw){
+  return raw.replace(/\r/g,'')
+            .replace(/\)\s*%(\s*)(?=\S)/g, ')%$1\n')
+            .replace(/[ \t]+/g, m => m.includes('\t') ? '\t' : ' ')
+            .trim();
+}
 function parseProbabilityText(raw){
-  const lines = raw.replace(/\r/g,'').split('\n').map(l=>l.trim()).filter(l=>l.length);
+  const text = normalizeRaw(raw);
+  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
   const groups=[]; let current=null; let pendingName=null;
-
-  const groupFull = /^(.+?)\s*\(([\d.]+)%\)\s*$/;
-  const onlyPct = /^\(([\d.]+)%\)\s*$/;
-  const itemLine = /^(.*?)(?:\t|\s{2,}|\s)\s*([\d.]+)%$/; // 끝에 % 숫자
-
-  for(let line of lines){
-    // "퍼펙트 카드" 같이 퍼센트가 다음 줄에 오는 케이스
-    if(!groupFull.test(line) && !onlyPct.test(line) && !itemLine.test(line)){
-      // 그룹 이름 후보
-      pendingName = line;
-      continue;
-    }
-    if(groupFull.test(line)){
-      const [,name,pct]=line.match(groupFull);
-      current = {name:name.trim(), pct:parseFloat(pct), items:[]};
-      groups.push(current);
-      pendingName=null;
-      continue;
-    }
-    if(onlyPct.test(line) && pendingName){
-      const [,pct]=line.match(onlyPct);
-      current = {name: pendingName.trim(), pct: parseFloat(pct), items:[]};
-      groups.push(current);
-      pendingName=null;
-      continue;
-    }
-    const m = line.match(itemLine);
-    if(m && current){
-      const name = m[1].trim();
-      const pct = parseFloat(m[2]);
-      current.items.push({name, pct});
-    }
+  const groupFull=/^(.+?)\s*\(([\d.]+)%\)\s*$/; const onlyPct=/^\(([\d.]+)%\)\s*$/;
+  const itemTailPct=/^(.*?)\s*(?:\t|\s{2,}|\s)\s*([\d.]+)%[^%]*$/;
+  for(const line of lines){
+    if(groupFull.test(line)){const[,n,p]=line.match(groupFull);current={name:n.trim(),pct:+p,items:[]};groups.push(current);pendingName=null;continue;}
+    if(onlyPct.test(line)&&pendingName){const[,p]=line.match(onlyPct);current={name:pendingName.trim(),pct:+p,items:[]};groups.push(current);pendingName=null;continue;}
+    if(!onlyPct.test(line)&&!itemTailPct.test(line)&&!groupFull.test(line)){pendingName=line;continue;}
+    const m=line.match(itemTailPct); if(m&&current){const name=m[1].trim(); const pct=+m[2]; if(!isNaN(pct)) current.items.push({name,pct});}
   }
   return groups;
 }
+function pickWeighted(arr,key='pct'){const sum=arr.reduce((s,a)=>s+a[key],0);let r=Math.random()*sum,acc=0;for(const it of arr){acc+=it[key];if(r<=acc)return it}return arr.at(-1)}
+function rarityClass(n){if(n.includes('퍼펙트'))return'r-perfect';if(n.includes('셀렉션'))return'r-select';if(n.includes('옵티멀'))return'r-optimal';if(n.includes('택틱컬'))return'r-tactical';return'r-common'}
 
-/* ---------- 3) 가중치 랜덤 ---------- */
-function pickWeighted(arr, weightKey='pct'){
-  const sum = arr.reduce((s,a)=>s + a[weightKey], 0);
-  let r = Math.random()*sum, acc=0;
-  for(const it of arr){
-    acc += it[weightKey];
-    if(r <= acc) return it;
-  }
-  return arr[arr.length-1];
-}
+const el={draw1:document.getElementById('draw1'),draw10:document.getElementById('draw10'),reset:document.getElementById('reset'),
+  last:document.getElementById('lastResult'),hist:document.getElementById('history'),groupT:document.getElementById('groupTable'),
+  itemT:document.getElementById('itemTable'),state:document.getElementById('loadState')};
 
-/* ---------- 4) UI 바인딩 ---------- */
-const el = {
-  data: document.getElementById('dataInput'),
-  parseBtn: document.getElementById('parseBtn'),
-  validate: document.getElementById('validate'),
-  draw1: document.getElementById('draw1'),
-  draw10: document.getElementById('draw10'),
-  reset: document.getElementById('reset'),
-  lastResult: document.getElementById('lastResult'),
-  history: document.getElementById('history'),
-  groupTable: document.getElementById('groupTable'),
-  itemTable: document.getElementById('itemTable'),
-};
-
-let GROUPS=[], COUNTS={total:0, group:{}, item:{}};
-
-function rarityClass(name){
-  if(name.includes('퍼펙트')) return 'r-perfect';
-  if(name.includes('셀렉션')) return 'r-select';
-  if(name.includes('옵티멀')) return 'r-optimal';
-  if(name.includes('택틱컬')) return 'r-tactical';
-  return 'r-common';
-}
+let GROUPS=[], CNT={total:0,group:{},item:{}};
 
 function renderTables(groups){
-  // 그룹 테이블
-  let ghtml = `<tr><th>그룹</th><th class="right">공식확률</th><th class="right">아이템합</th><th class="right">검증</th></tr>`;
-  for(const g of groups){
-    const sumItems = g.items.reduce((s,i)=>s+i.pct,0);
-    const diff = Math.abs(sumItems - g.pct);
-    const cls = diff<0.001 ? 'ok' : diff<0.01 ? 'warn' : 'bad';
-    ghtml += `<tr>
-      <td><span class="pill ${rarityClass(g.name)}">${g.name}</span></td>
-      <td class="right">${g.pct.toFixed(3)}%</td>
-      <td class="right">${sumItems.toFixed(3)}%</td>
-      <td class="right ${cls}">${diff.toFixed(3)}%</td>
-    </tr>`;
-  }
-  const totalPct = groups.reduce((s,g)=>s+g.pct,0);
-  ghtml += `<tr><th>합계</th><th class="right">${totalPct.toFixed(3)}%</th><th colspan="2"></th></tr>`;
-  el.groupTable.innerHTML = ghtml;
+  let ghtml=`<tr><th>그룹</th><th class="right">공식확률</th><th class="right">아이템합</th><th class="right">차이</th></tr>`;
+  for(const g of groups){const sum=g.items.reduce((s,i)=>s+i.pct,0);const diff=Math.abs(sum-g.pct);
+    const cls=diff<0.001?'ok':diff<0.01?'warn':'bad';
+    ghtml+=`<tr><td><span class="pill ${rarityClass(g.name)}">${g.name}</span></td>
+      <td class="right">${g.pct.toFixed(3)}%</td><td class="right">${sum.toFixed(3)}%</td>
+      <td class="right ${cls}">${diff.toFixed(3)}%</td></tr>`}
+  const total=groups.reduce((s,g)=>s+g.pct,0); ghtml+=`<tr><th>합계</th><th class="right">${total.toFixed(3)}%</th><th colspan="2"></th></tr>`;
+  el.groupT.innerHTML=ghtml;
 
-  // 아이템 테이블
-  let ihtml = `<tr><th style="width:42%">아이템</th><th>그룹</th><th class="right">확률</th></tr>`;
-  for(const g of groups){
-    for(const it of g.items){
-      ihtml += `<tr>
-        <td>${it.name}</td>
-        <td><span class="pill ${rarityClass(g.name)}">${g.name}</span></td>
-        <td class="right">${it.pct}%</td>
-      </tr>`;
-    }
-  }
-  el.itemTable.innerHTML = ihtml;
+  let ihtml=`<tr><th style="width:42%">아이템</th><th>그룹</th><th class="right">확률</th></tr>`;
+  for(const g of groups){for(const it of g.items){
+    ihtml+=`<tr><td>${it.name}</td><td><span class="pill ${rarityClass(g.name)}">${g.name}</span></td><td class="right">${it.pct}%</td></tr>`}}
+  el.itemT.innerHTML=ihtml;
 }
-
-function resetStats(){
-  COUNTS = {total:0, group:{}, item:{}};
-  el.history.innerHTML = '';
-  el.lastResult.textContent = '아직 결과 없음';
-}
-
+function reset(){CNT={total:0,group:{},item:{}};el.hist.innerHTML='';el.last.textContent='아직 결과 없음'}
 function draw(n=1){
-  for(let k=0;k<n;k++){
-    const g = pickWeighted(GROUPS,'pct');
-    const it = pickWeighted(g.items,'pct');
-    COUNTS.total++;
-    COUNTS.group[g.name]=(COUNTS.group[g.name]||0)+1;
-    COUNTS.item[it.name]=(COUNTS.item[it.name]||0)+1;
-
-    // 결과 표시
-    el.lastResult.innerHTML = `
-      <span class="pill ${rarityClass(g.name)}">${g.name}</span>
+  for(let k=0;k<n;k++){const g=pickWeighted(GROUPS,'pct'); const it=pickWeighted(g.items,'pct');
+    CNT.total++; CNT.group[g.name]=(CNT.group[g.name]||0)+1; CNT.item[it.name]=(CNT.item[it.name]||0)+1;
+    el.last.innerHTML=`<span class="pill ${rarityClass(g.name)}">${g.name}</span>
       <div style="font-weight:800;font-size:18px">${it.name}</div>
-      <div class="tag">아이템 확률 ${it.pct}%</div>
-      <div class="tag">누적 ${COUNTS.total}회</div>
-    `;
-    // 히스토리
-    const h = document.createElement('div');
-    h.innerHTML = `<span>${COUNTS.total}. ${it.name}</span>
-      <span class="pill ${rarityClass(g.name)}">${g.name}</span>`;
-    el.history.prepend(h);
+      <div class="tag">아이템 확률 ${it.pct}%</div><div class="tag">누적 ${CNT.total}회</div>`;
+    const h=document.createElement('div'); h.innerHTML=`<span>${CNT.total}. ${it.name}</span>
+      <span class="pill ${rarityClass(g.name)}">${g.name}</span>`; el.hist.prepend(h);
   }
 }
 
-el.parseBtn.onclick = ()=>{
+/* 확률 파일 로드*/
+async function boot(){
   try{
-    GROUPS = parseProbabilityText(el.data.value);
-    if(!GROUPS.length) throw new Error('그룹을 찾지 못했습니다.');
-    renderTables(GROUPS);
+    const res = await fetch('probabilities.txt', {cache:'no-cache'});
+    if(!res.ok) throw new Error('확률 파일을 불러올 수 없습니다.');
+    const raw = await res.text();
+    GROUPS = parseProbabilityText(raw);
+    if(!GROUPS.length) throw new Error('파싱 실패: 그룹 없음');
 
-    const total = GROUPS.reduce((s,g)=>s+g.pct,0);
-    const ok = Math.abs(total-100)<0.01;
-    el.validate.innerHTML = `
-      <span class="tag">그룹 수: ${GROUPS.length}</span>
-      <span class="tag ${ok?'ok':'bad'}">그룹 합계: ${total.toFixed(3)}%</span>
-      <span class="tag">아이템 총 ${GROUPS.reduce((s,g)=>s+g.items.length,0)}개</span>
-    `;
+    renderTables(GROUPS); reset();
     el.draw1.disabled = el.draw10.disabled = el.reset.disabled = false;
-    resetStats();
+    const total = GROUPS.reduce((s,g)=>s+g.pct,0);
+    el.state.textContent = `로드 완료 · 그룹합 ${total.toFixed(2)}%`;
+    el.state.className = 'tag ok';
   }catch(e){
-    el.validate.innerHTML = `<span class="bad">파싱 오류: ${e.message}</span>`;
+    el.state.textContent = e.message;
+    el.state.className = 'tag bad';
   }
-};
-
-el.draw1.onclick = ()=> draw(1);
-el.draw10.onclick = ()=> draw(10);
-el.reset.onclick = resetStats;
-
-// 초기값 세팅
-document.getElementById('dataInput').value = RAW_DEFAULT;
+}
+document.getElementById('draw1').onclick = ()=>draw(1);
+document.getElementById('draw10').onclick = ()=>draw(10);
+document.getElementById('reset').onclick = reset;
+boot();
 </script>
 </body>
 </html>
