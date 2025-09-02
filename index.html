@@ -74,10 +74,13 @@
 
 function normalizeRaw(raw){
   return raw.replace(/\r/g,'')
-            .replace(/\)\s*%(\s*)(?=\S)/g, ')%$1\n')
+            // "(0.07%)" 바로 뒤에 글자가 오면 줄바꿈 삽입
+            .replace(/%\)\s*(?=\S)/g, '%)\n')
+            // 탭/스페이스 정규화
             .replace(/[ \t]+/g, m => m.includes('\t') ? '\t' : ' ')
             .trim();
 }
+
 function parseProbabilityText(raw){
   const text = normalizeRaw(raw);
   const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
@@ -86,32 +89,32 @@ function parseProbabilityText(raw){
   const groupFull=/^(.+?)\s*\(([\d.]+)%\)\s*$/;
   const onlyPct=/^\(([\d.]+)%\)\s*$/;
   const itemTailPct=/^(.*?)\s*(?:\t|\s{2,}|\s)\s*([\d.]+)%[^%]*$/;
+  const round8 = v => Math.round(parseFloat(v) * 1e8) / 1e8;
 
-  for(const line of lines){
-    if(groupFull.test(line)){
+  for (const line of lines){
+    if (groupFull.test(line)){
       const [,n,p]=line.match(groupFull);
-      const rounded = Math.round(parseFloat(p) * 1e8) / 1e8;
-      current={name:n.trim(), pct:rounded, items:[]};
+      current = { name:n.trim(), pct:round8(p), items:[] };
       groups.push(current); pendingName=null; continue;
     }
-    if(onlyPct.test(line) && pendingName){
+    if (onlyPct.test(line) && pendingName){
       const [,p]=line.match(onlyPct);
-      const rounded = Math.round(parseFloat(p) * 1e8) / 1e8;
-      current={name:pendingName.trim(), pct:rounded, items:[]};
+      current = { name:pendingName.trim(), pct:round8(p), items:[] };
       groups.push(current); pendingName=null; continue;
     }
-    if(!onlyPct.test(line)&&!itemTailPct.test(line)&&!groupFull.test(line)){
-      pendingName=line; continue;
+    if (!onlyPct.test(line) && !itemTailPct.test(line) && !groupFull.test(line)){
+      pendingName = line; continue; 
     }
-    const m=line.match(itemTailPct);
-    if(m && current){
-      const pct = parseFloat(m[2]);
-      const rounded = Math.round(pct * 1e8) / 1e8;
-      current.items.push({name:m[1].trim(), pct:rounded});
+    const m = line.match(itemTailPct);
+    if (m && current){
+      const name = m[1].trim();
+      const pct  = round8(m[2]);
+      if (!isNaN(pct)) current.items.push({ name, pct });
     }
   }
   return groups;
 }
+
 
 function pickWeighted(arr,key='pct'){const sum=arr.reduce((s,a)=>s+a[key],0);let r=Math.random()*sum,acc=0;for(const it of arr){acc+=it[key];if(r<=acc)return it}return arr.at(-1)}
 function rarityClass(n){if(n.includes('퍼펙트'))return'r-perfect';if(n.includes('셀렉션'))return'r-select';if(n.includes('옵티멀'))return'r-optimal';if(n.includes('택틱컬'))return'r-tactical';return'r-common'}
