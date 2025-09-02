@@ -5,13 +5,17 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>카드 뽑기 시뮬레이터</title>
 <style>
-  :root{--bg:#0b0c10;--card:#16181d;--muted:#9aa4b2;--text:#e6e9ef;--accent:#3ddc84;
-    --r-perfect:#b786ff;--r-select:#42a5f5;--r-optimal:#26c6da;--r-tactical:#ffd54f;--r-common:#b0bec5;}
-  *{box-sizing:border-box} body{margin:0;background:linear-gradient(120deg,#0b0c10,#111418);
-  color:var(--text);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans KR",sans-serif}
+  :root{
+    --bg:#0b0c10;--card:#16181d;--muted:#9aa4b2;--text:#e6e9ef;--accent:#3ddc84;
+    --r-perfect:#b786ff;--r-select:#42a5f5;--r-optimal:#26c6da;--r-tactical:#ffd54f;--r-common:#b0bec5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(120deg,#0b0c10,#111418);color:var(--text);
+       font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans KR","Apple SD Gothic Neo","Noto Sans KR",sans-serif}
   .wrap{max-width:980px;margin:24px auto;padding:20px}
   h1{margin:0 0 8px;font-size:28px;font-weight:800}
-  .sub{color:var(--muted);margin-bottom:16px}
+  .sub{color:var(--muted);margin:6px 0 16px}
+  .sub a{color:#72c1ff;text-decoration:none}
   .panel{background:var(--card);border:1px solid #22272e;border-radius:16px;padding:16px;margin:12px 0}
   .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   button{background:#1d222a;color:#fff;border:1px solid #2a2f36;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer}
@@ -21,7 +25,7 @@
   .pill{padding:4px 10px;border-radius:999px;font-weight:800;font-size:12px}
   .tag{font-size:12px;border-radius:999px;padding:4px 8px;border:1px solid #2a2f36;color:var(--muted)}
   .ok{color:#6ee7b7}.warn{color:#fbbf24}.bad{color:#f87171}
-  .hist{max-height:240px;overflow:auto;border:1px dashed #2a2f36;border-radius:12px;padding:10px;background:#0e1014}
+  .hist{max-height:260px;overflow:auto;border:1px dashed #2a2f36;border-radius:12px;padding:10px;background:#0e1014}
   .hist div{display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px solid #181c22}
   .hist div:last-child{border-bottom:0}
   table{width:100%;border-collapse:collapse;font-size:13px}
@@ -32,16 +36,21 @@
   .r-optimal{background:var(--r-optimal);color:#062226}
   .r-tactical{background:var(--r-tactical);color:#2d2200}
   .r-common{background:var(--r-common);color:#0c1116}
+  /* 히스토리 필터 세그먼트 버튼 */
+  .seg{
+    background:#12161c;border:1px solid #2a2f36;border-radius:999px;
+    padding:6px 10px;font-weight:700;font-size:12px;color:#cbd5e1;cursor:pointer
+  }
+  .seg.on{background:#1f6f5c;border-color:#2aa87f;color:#eafff5}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>카드 뽑기 시뮬레이터</h1>
-  <div class="sub">확률은 2005년 9월 카드 자판기 확률 참고
-    <a href="https://community.gnjoy.com/rom/Board/ROM21/180622" 
-     target="_blank" rel="noopener noreferrer">
-    (공식 게시글 보기)
-  </a></div>
+  <div class="sub">
+    확률은 2005년 9월 카드 자판기 확률 참고
+    <a href="https://community.gnjoy.com/rom/Board/ROM21/180622" target="_blank" rel="noopener noreferrer">(공식 게시글 보기)</a>
+  </div>
 
   <div class="panel">
     <div class="row" style="justify-content:space-between">
@@ -52,9 +61,22 @@
       </div>
       <div id="loadState" class="tag">불러오는 중…</div>
     </div>
+
     <div id="lastResult" class="result">아직 결과 없음</div>
-    <div style="margin-top:10px">
-      <div class="muted" style="margin-bottom:6px">히스토리</div>
+
+    <div style="margin-top:12px">
+      <div class="row" style="justify-content:space-between">
+        <div class="muted">히스토리</div>
+      </div>
+      <!-- 히스토리 필터 -->
+      <div class="row" id="histFilter" style="gap:6px;margin:6px 0 10px">
+        <button class="seg on"  data-f="ALL">전체</button>
+        <button class="seg" data-f="퍼펙트">퍼펙트</button>
+        <button class="seg" data-f="셀렉션">셀렉션</button>
+        <button class="seg" data-f="옵티멀">옵티멀</button>
+        <button class="seg" data-f="택틱컬">택틱컬</button>
+        <button class="seg" data-f="일반">일반</button>
+      </div>
       <div id="history" class="hist"></div>
     </div>
   </div>
@@ -75,21 +97,21 @@
 function normalizeRaw(raw){
   return raw
     .replace(/\r/g,'')
-    .replace(/\\t/g, '\t')          //  '\t' 글자를 실제 탭으로 변환
-    .replace(/%\)\s*(?=\S)/g, '%)\n') // 그룹확률 뒤에 아이템이 붙은 경우 줄바꿈
+    .replace(/\\t/g, '\t') 
+    .replace(/%\)\s*(?=\S)/g, '%)\n')
     .replace(/[ \t]+/g, m => (m.includes('\t') ? '\t' : ' '))
     .trim();
 }
 
-
+/** 파서 (소수점 8자리 반올림) */
 function parseProbabilityText(raw){
   const text = normalizeRaw(raw);
   const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
 
   const groups=[]; let current=null; let pendingName=null;
   const groupFull=/^(.+?)\s*\(([\d.]+)%\)\s*$/;   // "그룹 (x%)"
-  const onlyPct=/^\(([\d.]+)%\)\s*$/;             // "(x%)"만
-  const itemTailPct=/^(.*?)\s*(?:\t|\s{2,}|\s)\s*([\d.]+)%[^%]*$/; // 아이템 줄
+  const onlyPct=/^\(([\d.]+)%\)\s*$/;             // "(x%)"
+  const itemTailPct=/^(.*?)\s*(?:\t|\s{2,}|\s)\s*([\d.]+)%[^%]*$/; // "이름  0.123%"
   const round8 = v => Math.round(parseFloat(v) * 1e8) / 1e8;
 
   for (const line of lines){
@@ -116,39 +138,49 @@ function parseProbabilityText(raw){
   return groups;
 }
 
-/** 3) 가중치 랜덤 선택 */
+/** 가중치 랜덤 */
 function pickWeighted(arr,key='pct'){
   const sum = arr.reduce((s,a)=>s+a[key],0);
-  let r = Math.random()*sum, acc=0;
+  let r=Math.random()*sum, acc=0;
   for(const it of arr){ acc+=it[key]; if(r<=acc) return it; }
   return arr.at(-1);
 }
 
-/* ---------------- UI 바인딩 ---------------- */
+/* ---------- UI ---------- */
 const el = {
   draw1:document.getElementById('draw1'),
   draw10:document.getElementById('draw10'),
   reset:document.getElementById('reset'),
   last:document.getElementById('lastResult'),
   hist:document.getElementById('history'),
+  histFilter:document.getElementById('histFilter'),
   groupT:document.getElementById('groupTable'),
   itemT:document.getElementById('itemTable'),
   state:document.getElementById('loadState')
 };
 
 let GROUPS=[], CNT={total:0,group:{},item:{}};
+let HISTORY=[];            // 히스토리 전체 저장
+let HISTORY_FILTER='ALL';  // 현재 필터
 
 function rarityClass(n){
   if(n.includes('퍼펙트'))return'r-perfect';
   if(n.includes('셀렉션'))return'r-select';
-  if(n.includes('옵티멀'))return'r-optimal';
-  if(n.includes('택틱컬'))return'r-tactical';
+  if(n.includes('옵티멀')) return'r-optimal';
+  if(n.includes('택틱컬')) return'r-tactical';
   return'r-common';
+}
+function normGroup(n){
+  if(n.includes('퍼펙트'))return'퍼펙트';
+  if(n.includes('셀렉션'))return'셀렉션';
+  if(n.includes('옵티멀')) return'옵티멀';
+  if(n.includes('택틱컬')) return'택틱컬';
+  return'일반';
 }
 
 function renderTables(groups){
-  // 그룹별
-  let ghtml=`<tr><th>그룹</th><th class="right">공식확률</th><th class="right">소수8자리 반올림 적용</th><th class="right">차이</th></tr>`;
+  // 그룹 요약
+  let ghtml=`<tr><th>그룹</th><th class="right">공식확률</th><th class="right">아이템합</th><th class="right">차이</th></tr>`;
   for(const g of groups){
     const sum=g.items.reduce((s,i)=>s+i.pct,0);
     const diff=Math.abs(sum-g.pct);
@@ -164,7 +196,7 @@ function renderTables(groups){
   ghtml+=`<tr><th>합계</th><th class="right">${total.toFixed(8)}%</th><th colspan="2"></th></tr>`;
   el.groupT.innerHTML=ghtml;
 
-  // 아이템별
+  // 아이템 목록
   let ihtml=`<tr><th style="width:42%">아이템</th><th>그룹</th><th class="right">확률</th></tr>`;
   for(const g of groups){
     for(const it of g.items){
@@ -178,10 +210,23 @@ function renderTables(groups){
   el.itemT.innerHTML=ihtml;
 }
 
+function renderHistory(){
+  el.hist.innerHTML='';
+  for(let i=HISTORY.length-1;i>=0;i--){
+    const h=HISTORY[i];
+    if(HISTORY_FILTER!=='ALL' && h.groupShort!==HISTORY_FILTER) continue;
+    const row=document.createElement('div');
+    row.innerHTML=`<span>${h.index}. ${h.item}</span>
+      <span class="pill ${rarityClass(h.groupFull)}">${h.groupShort} 카드</span>`;
+    el.hist.appendChild(row);
+  }
+}
+
 function reset(){
   CNT={total:0,group:{},item:{}};
-  el.hist.innerHTML='';
+  HISTORY=[];
   el.last.textContent='아직 결과 없음';
+  renderHistory();
 }
 
 function draw(n=1){
@@ -196,14 +241,23 @@ function draw(n=1){
       <div style="font-weight:800;font-size:18px">${it.name}</div>
       <div class="tag">아이템 확률 ${it.pct.toFixed(8)}%</div>
       <div class="tag">누적 ${CNT.total}회</div>`;
-    const h=document.createElement('div');
-    h.innerHTML=`<span>${CNT.total}. ${it.name}</span>
-      <span class="pill ${rarityClass(g.name)}">${g.name}</span>`;
-    el.hist.prepend(h);
+
+    HISTORY.push({index:CNT.total,item:it.name,groupFull:g.name,groupShort:normGroup(g.name)});
   }
+  renderHistory();
 }
 
-/* 확률 파일 로드 */
+/* 필터 버튼 동작 */
+el.histFilter.querySelectorAll('button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    el.histFilter.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    HISTORY_FILTER = btn.dataset.f;
+    renderHistory();
+  });
+});
+
+/* 확률 파일 로드 & 초기화 */
 async function boot(){
   try{
     const res = await fetch('probabilities.txt',{cache:'no-cache'});
