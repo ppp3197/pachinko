@@ -18,17 +18,22 @@
   .sub a{color:#72c1ff;text-decoration:none}
   .panel{background:var(--card);border:1px solid #22272e;border-radius:16px;padding:16px;margin:12px 0}
   .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  button{background:#1d222a;color:#fff;border:1px solid #2a2f36;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer}
+  button{background:#1d222a;color:#fff;border:1px solid #2a2f36;border-radius:12px;
+         padding:10px 14px;font-weight:700;cursor:pointer}
   button.primary{background:var(--accent);color:#0e2f22;border-color:#1f7e56}
   button:disabled{opacity:.6;cursor:not-allowed}
-  .result{display:flex;align-items:center;gap:14px;padding:14px;border-radius:12px;border:1px solid #2a2f36;background:#0f1115;min-height:72px}
+  .controls button{flex:1 1 32%;min-width:110px}
+  .result{display:flex;align-items:center;gap:14px;padding:14px;border-radius:12px;
+          border:1px solid #2a2f36;background:#0f1115;min-height:72px;flex-wrap:wrap;word-break:keep-all}
   .pill{padding:4px 10px;border-radius:999px;font-weight:800;font-size:12px}
   .tag{font-size:12px;border-radius:999px;padding:4px 8px;border:1px solid #2a2f36;color:var(--muted)}
   .ok{color:#6ee7b7}.warn{color:#fbbf24}.bad{color:#f87171}
-  .hist{max-height:260px;overflow:auto;border:1px dashed #2a2f36;border-radius:12px;padding:10px;background:#0e1014}
-  .hist div{display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px solid #181c22}
+  .hist{max-height:260px;overflow:auto;border:1px dashed #2a2f36;border-radius:12px;
+        padding:10px;background:#0e1014;-webkit-overflow-scrolling:touch}
+  .hist div{display:flex;justify-content:space-between;gap:10px;
+            padding:6px 4px;border-bottom:1px solid #181c22}
   .hist div:last-child{border-bottom:0}
-  table{width:100%;border-collapse:collapse;font-size:13px}
+  table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
   th,td{padding:8px;border-bottom:1px solid #1f2430} th{color:#cbd5e1;text-align:left}
   .right{text-align:right}
   .r-perfect{background:var(--r-perfect);color:#191622}
@@ -37,11 +42,37 @@
   .r-tactical{background:var(--r-tactical);color:#2d2200}
   .r-common{background:var(--r-common);color:#0c1116}
   /* 히스토리 필터 세그먼트 버튼 */
-  .seg{
-    background:#12161c;border:1px solid #2a2f36;border-radius:999px;
-    padding:6px 10px;font-weight:700;font-size:12px;color:#cbd5e1;cursor:pointer
-  }
+  .seg{background:#12161c;border:1px solid #2a2f36;border-radius:999px;
+       padding:6px 10px;font-weight:700;font-size:12px;color:#cbd5e1;cursor:pointer;white-space:nowrap}
   .seg.on{background:#1f6f5c;border-color:#2aa87f;color:#eafff5}
+  /* 안전 영역 대응 */
+  .wrap{
+    padding-left:max(16px,env(safe-area-inset-left));
+    padding-right:max(16px,env(safe-area-inset-right));
+    padding-top:max(16px,env(safe-area-inset-top));
+    padding-bottom:max(16px,env(safe-area-inset-bottom));
+  }
+  h1{font-size:clamp(20px,4.5vw,28px)}
+  body{font-size:clamp(14px,3.6vw,15px)}
+  button,.tag,.pill{font-size:clamp(11px,3.2vw,12px)}
+  /* 테이블 반응형 */
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #2a2f36;border-radius:10px}
+  .table-wrap table{min-width:560px}
+  /* 미디어쿼리 */
+  @media (max-width:420px){
+    .wrap{max-width:100%;margin:12px auto}
+    .panel{padding:12px;border-radius:12px}
+    .row{gap:8px}
+    button{padding:10px 12px;border-radius:10px}
+    .result{padding:12px;gap:10px}
+    th,td{padding:6px}
+    .hist{max-height:50vh}
+    #histFilter{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .controls button{flex:1 1 100%} /* 버튼 세로 스택 */
+  }
+  @media (max-width:360px){
+    button{padding:8px 10px}
+  }
 </style>
 </head>
 <body>
@@ -53,12 +84,10 @@
   </div>
 
   <div class="panel">
-    <div class="row" style="justify-content:space-between">
-      <div class="row">
-        <button id="draw1" class="primary" disabled>1회 뽑기</button>
-        <button id="draw10" disabled>10회 뽑기</button>
-        <button id="reset" disabled>리셋</button>
-      </div>
+    <div class="row controls" style="justify-content:space-between">
+      <button id="draw1" class="primary" disabled>1회 뽑기</button>
+      <button id="draw10" disabled>10회 뽑기</button>
+      <button id="reset" disabled>리셋</button>
       <div id="loadState" class="tag">불러오는 중…</div>
     </div>
 
@@ -83,17 +112,17 @@
 
   <div class="panel">
     <div class="muted" style="margin-bottom:8px">그룹별 확률 (공개)</div>
-    <table id="groupTable"></table>
+    <div class="table-wrap"><table id="groupTable"></table></div>
   </div>
 
   <div class="panel">
     <div class="muted" style="margin-bottom:8px">아이템 목록/확률 (공개)</div>
-    <table id="itemTable"></table>
+    <div class="table-wrap"><table id="itemTable"></table></div>
   </div>
 </div>
 
 <script>
-
+/* --- JS 로직은 기존과 동일 --- */
 function normalizeRaw(raw){
   return raw
     .replace(/\r/g,'')
@@ -102,18 +131,14 @@ function normalizeRaw(raw){
     .replace(/[ \t]+/g, m => (m.includes('\t') ? '\t' : ' '))
     .trim();
 }
-
-/** 파서 (소수점 8자리 반올림) */
 function parseProbabilityText(raw){
   const text = normalizeRaw(raw);
   const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
-
   const groups=[]; let current=null; let pendingName=null;
-  const groupFull=/^(.+?)\s*\(([\d.]+)%\)\s*$/;   // "그룹 (x%)"
-  const onlyPct=/^\(([\d.]+)%\)\s*$/;             // "(x%)"
-  const itemTailPct=/^(.*?)\s*(?:\t|\s{2,}|\s)\s*([\d.]+)%[^%]*$/; // "이름  0.123%"
+  const groupFull=/^(.+?)\s*\(([\d.]+)%\)\s*$/;
+  const onlyPct=/^\(([\d.]+)%\)\s*$/;
+  const itemTailPct=/^(.*?)\s*(?:\t|\s{2,}|\s)\s*([\d.]+)%[^%]*$/;
   const round8 = v => Math.round(parseFloat(v) * 1e8) / 1e8;
-
   for (const line of lines){
     if (groupFull.test(line)){
       const [,n,p]=line.match(groupFull);
@@ -126,7 +151,7 @@ function parseProbabilityText(raw){
       groups.push(current); pendingName=null; continue;
     }
     if (!onlyPct.test(line) && !itemTailPct.test(line) && !groupFull.test(line)){
-      pendingName = line; continue; // 그룹명만 먼저 온 줄
+      pendingName = line; continue;
     }
     const m = line.match(itemTailPct);
     if (m && current){
@@ -137,16 +162,12 @@ function parseProbabilityText(raw){
   }
   return groups;
 }
-
-/** 가중치 랜덤 */
 function pickWeighted(arr,key='pct'){
   const sum = arr.reduce((s,a)=>s+a[key],0);
   let r=Math.random()*sum, acc=0;
   for(const it of arr){ acc+=it[key]; if(r<=acc) return it; }
   return arr.at(-1);
 }
-
-/* ---------- UI ---------- */
 const el = {
   draw1:document.getElementById('draw1'),
   draw10:document.getElementById('draw10'),
@@ -158,11 +179,8 @@ const el = {
   itemT:document.getElementById('itemTable'),
   state:document.getElementById('loadState')
 };
-
 let GROUPS=[], CNT={total:0,group:{},item:{}};
-let HISTORY=[];            // 히스토리 전체 저장
-let HISTORY_FILTER='ALL';  // 현재 필터
-
+let HISTORY=[]; let HISTORY_FILTER='ALL';
 function rarityClass(n){
   if(n.includes('퍼펙트'))return'r-perfect';
   if(n.includes('셀렉션'))return'r-select';
@@ -177,9 +195,7 @@ function normGroup(n){
   if(n.includes('택틱컬')) return'택틱컬';
   return'일반';
 }
-
 function renderTables(groups){
-  // 그룹 요약
   let ghtml=`<tr><th>그룹</th><th class="right">공식확률</th><th class="right">아이템합</th><th class="right">차이</th></tr>`;
   for(const g of groups){
     const sum=g.items.reduce((s,i)=>s+i.pct,0);
@@ -195,8 +211,6 @@ function renderTables(groups){
   const total=groups.reduce((s,g)=>s+g.pct,0);
   ghtml+=`<tr><th>합계</th><th class="right">${total.toFixed(8)}%</th><th colspan="2"></th></tr>`;
   el.groupT.innerHTML=ghtml;
-
-  // 아이템 목록
   let ihtml=`<tr><th style="width:42%">아이템</th><th>그룹</th><th class="right">확률</th></tr>`;
   for(const g of groups){
     for(const it of g.items){
@@ -209,7 +223,6 @@ function renderTables(groups){
   }
   el.itemT.innerHTML=ihtml;
 }
-
 function renderHistory(){
   el.hist.innerHTML='';
   for(let i=HISTORY.length-1;i>=0;i--){
@@ -221,14 +234,10 @@ function renderHistory(){
     el.hist.appendChild(row);
   }
 }
-
 function reset(){
   CNT={total:0,group:{},item:{}};
-  HISTORY=[];
-  el.last.textContent='아직 결과 없음';
-  renderHistory();
+  HISTORY=[]; el.last.textContent='아직 결과 없음'; renderHistory();
 }
-
 function draw(n=1){
   for(let k=0;k<n;k++){
     const g=pickWeighted(GROUPS,'pct');
@@ -236,45 +245,36 @@ function draw(n=1){
     CNT.total++;
     CNT.group[g.name]=(CNT.group[g.name]||0)+1;
     CNT.item[it.name]=(CNT.item[it.name]||0)+1;
-
     el.last.innerHTML=`<span class="pill ${rarityClass(g.name)}">${g.name}</span>
       <div style="font-weight:800;font-size:18px">${it.name}</div>
       <div class="tag">아이템 확률 ${it.pct.toFixed(8)}%</div>
       <div class="tag">누적 ${CNT.total}회</div>`;
-
     HISTORY.push({index:CNT.total,item:it.name,groupFull:g.name,groupShort:normGroup(g.name)});
   }
   renderHistory();
 }
-
-/* 필터 버튼 동작 */
 el.histFilter.querySelectorAll('button').forEach(btn=>{
   btn.addEventListener('click',()=>{
     el.histFilter.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
     btn.classList.add('on');
-    HISTORY_FILTER = btn.dataset.f;
+    HISTORY_FILTER=btn.dataset.f;
     renderHistory();
   });
 });
-
-/* 확률 파일 로드 & 초기화 */
 async function boot(){
   try{
-    const res = await fetch('probabilities.txt',{cache:'no-cache'});
+    const res=await fetch('probabilities.txt',{cache:'no-cache'});
     if(!res.ok) throw new Error('확률 파일을 불러올 수 없습니다.');
-    const raw = await res.text();
-    GROUPS = parseProbabilityText(raw);
+    const raw=await res.text();
+    GROUPS=parseProbabilityText(raw);
     if(!GROUPS.length) throw new Error('파싱 실패: 그룹 없음');
-
-    renderTables(GROUPS);
-    reset();
+    renderTables(GROUPS); reset();
     el.draw1.disabled=el.draw10.disabled=el.reset.disabled=false;
     const total=GROUPS.reduce((s,g)=>s+g.pct,0);
     el.state.textContent=`로드 완료 · 그룹합 ${total.toFixed(8)}%`;
     el.state.className='tag ok';
   }catch(e){
-    el.state.textContent=e.message;
-    el.state.className='tag bad';
+    el.state.textContent=e.message; el.state.className='tag bad';
   }
 }
 el.draw1.onclick=()=>draw(1);
